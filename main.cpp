@@ -1,9 +1,8 @@
 #include <iostream>
 #include "Int8.hpp"
-#include "IOperand.hpp"
 
 int main(void) {
-	IOperand *operand = new Int8("2fasdf");
+	Int8 *operand = new Int8("12");
 
 	std::cout << operand->toString() << std::endl;
 
