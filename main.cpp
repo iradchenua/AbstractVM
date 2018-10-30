@@ -1,8 +1,12 @@
 #include <iostream>
-
-using namespace std;
+#include "Int8.hpp"
+#include "IOperand.hpp"
 
 int main(void) {
-	cout << "Hello world" << endl;
+	IOperand *operand = new Int8();
+
+	std::cout << operand->toString() << std::endl;
+
+	delete operand;
 	return (0);
 }
