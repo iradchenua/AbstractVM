@@ -5,8 +5,10 @@
 
 class Int8 : public IOperand {
 	private:
-		std::string const _strVal;
+		int8_t  _val;
+		std::string _strVal;
 	public:
+		Int8(std::string const strVal);
 		Int8(void);
 		~Int8(void);
 		std::string const & toString(void) const;

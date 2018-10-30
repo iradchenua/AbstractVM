@@ -1,4 +1,6 @@
 #include <string>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef IOPERAND_HPP
 #define IOPERAND_HPP

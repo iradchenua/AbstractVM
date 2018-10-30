@@ -3,7 +3,7 @@
 #include "IOperand.hpp"
 
 int main(void) {
-	IOperand *operand = new Int8();
+	IOperand *operand = new Int8("2fasdf");
 
 	std::cout << operand->toString() << std::endl;
 
