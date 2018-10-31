@@ -1,9 +1,10 @@
 
 NAME = avm
 
-SRCS =  Int8.cpp \
+SRCS =  src/AOperand.cpp \
+		src/Factory.cpp \
+		src/Int8.cpp \
 		main.cpp
-
 
 INCLUDES = -I includes/ 
 
