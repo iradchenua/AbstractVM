@@ -12,6 +12,7 @@ class Factory {
 	private:
 		static const operandCreator _operandCreators[COUNT];
 		IOperand const *createInt8(std::string const & value) const;
+		IOperand const *createInt16(std::string const & value) const;
 };
 
 #endif

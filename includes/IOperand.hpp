@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <cstdint>
 
 #ifndef IOPERAND_HPP
 #define IOPERAND_HPP
 
-enum eOperandType {Int8_t, COUNT};
+enum eOperandType {Int8, Int16, COUNT};
 
 class IOperand  {
 	public:

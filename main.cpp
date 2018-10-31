@@ -2,8 +2,8 @@
 #include "AOperand.hpp"
 
 int main(void) {
-	IOperand const *lhs = factorySpace::factory.createOperand(Int8_t, "12");
-	IOperand const *rhs = factorySpace::factory.createOperand(Int8_t, "13");
+	IOperand const *lhs = factorySpace::factory.createOperand(Int8, "12");
+	IOperand const *rhs = factorySpace::factory.createOperand(Int8, "260");
 	IOperand const *res = *lhs + *rhs;
 
 	std::cout << (*lhs) << std::endl;
@@ -13,5 +13,6 @@ int main(void) {
 	delete res;
 	delete lhs;
 	delete rhs;
+
 	return (0);
 }
