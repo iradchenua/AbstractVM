@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <typeinfo>
+#include <cmath>
 
 #ifndef AOPERAND_HPP
 #define AOPERAND_HPP
@@ -12,46 +13,97 @@ template <typename T>
 class AOperand : public IOperand {
 
 	private:
+		eOperandType const _type;
 		int const _precison;
-		T  _val;
-		std::string _strVal;
+		T  const _val;
+		std::string const _strVal;
+
+		template<typename Lambda>
+
+		IOperand const * doOp(IOperand const & rhs, Lambda && Op) const{
+			std::string resVal;
+			switch(rhs.getType())  {
+				case (Int16):
+					resVal = std::to_string(Op(this->_val, dynamic_cast<AOperand<int16_t> const &>(rhs).getVal()));
+					break;
+				case (Int32):
+					resVal = std::to_string(Op(this->_val, dynamic_cast<AOperand<int32_t> const &>(rhs).getVal()));
+					break;
+				case (Float):
+					resVal = std::to_string(Op(this->_val, dynamic_cast<AOperand<float> const &>(rhs).getVal()));
+					break;
+				case (Double):
+					resVal = std::to_string(Op(this->_val, dynamic_cast<AOperand<double> const &>(rhs).getVal()));
+					break;
+				default:
+					resVal = std::to_string(Op(this->_val, dynamic_cast<AOperand<int8_t> const &>(rhs).getVal()));
+					break;
+			}
+			return (factorySpace::factory.createOperand(this->biggerType(rhs), resVal));
+		};
+
+		T convertFun(std::string const strVal) {
+			if (this->_type < Int32)
+				return (std::stoi(strVal));
+			if (this->_type == Float)
+				return (std::stof(strVal));
+			return (std::stod(strVal));
+		};
 
 	public:
-		virtual IOperand const * operator+(IOperand const & rhs) const {
+		eOperandType getType(void) const {
+			return (this->_type);
+		};
 
-			std::string strRes;
-			try {
-				strRes	= std::to_string(this->getVal() + dynamic_cast<AOperand<int8_t> const &>(rhs).getVal());
-			}
-			catch (std::bad_cast const & e) {
-
-			}
-			try {
-				strRes	= std::to_string(this->getVal() + dynamic_cast<AOperand<int16_t> const &>(rhs).getVal());
-			}
-			catch (std::bad_cast const & e) {
-
-			}
-			eOperandType type;
+		eOperandType biggerType(IOperand const & rhs) const {
 			if (this->getPrecision() < rhs.getPrecision())
-				type = rhs.getType();
-			else
-				type = this->getType();
-			return (factorySpace::factory.createOperand(type, strRes));
-		}
+				return (rhs.getType());
+			return (this->_type);
+		};
+
+		virtual IOperand const * operator%(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+					if (b == 0)
+						throw std::invalid_argument("modulo by zero");
+					return (std::fmod(a, b));
+				}));
+		};
+
+		virtual IOperand const * operator/(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+				if (b == 0)
+					throw std::invalid_argument("dividing by zero");
+				return (a / b);
+			}));
+		};
+
+
+		virtual IOperand const * operator*(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+				return (a * b);
+			}));
+		};
+
+		virtual IOperand const * operator+(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+				return (a + b);
+			}));
+		};
+
+		virtual IOperand const * operator-(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+				return (a - b);
+			}));
+		};
+
 		int getPrecision(void) const {
-			return (_precison);
-		}
-		AOperand(std::string const strVal) :  _precison(sizeof(T)) {
-			this->_val = std::stoi(strVal);
-			if (this->_val > std::numeric_limits<T>::max() || this->_val < std::numeric_limits<T>::min())
-				throw std::out_of_range("value is out of limit");
-			this->_strVal = std::to_string(this->_val);
+			return (this->_precison);
+		};
+		AOperand(std::string const strVal, eOperandType type) :  \
+		_type(type), _precison(_type), _val(this->convertFun(strVal)), _strVal(std::to_string(this->_val)) {
+	
 		};
 
-		AOperand(void) : _precison(sizeof(T)), _val(0), _strVal("0") {
-
-		};
 		virtual ~AOperand(void) {
 
 		};
