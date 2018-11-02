@@ -18,7 +18,9 @@ int main(void) {
 	}
 	delete lhs;
 	delete rhs;*/
-	Reader reader;
+	std::deque<IOperand const *> * const deque = new std::deque<IOperand const *>();
+
+	Reader reader(deque);
 
 	reader.read();
 	return (0);
