@@ -2,6 +2,7 @@
 
 std::ostream & operator<<(std::ostream & o, IOperand const & operand) {
 	o << operand.toString() \
-	 << " " << operand.getType();
+	 << " " << factorySpace::strTypes[operand.getType()];
+
 	return (o);
 }

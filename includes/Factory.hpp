@@ -5,8 +5,13 @@
 
 class Factory {
 	public:
+
 		~Factory();
 		Factory();
+
+		Factory(Factory const & rhs);
+		Factory const & operator=(Factory const & rhs);
+
 		IOperand const *createOperand(eOperandType type, std::string const & value) const;
 		typedef IOperand const * (Factory::*operandCreator)(std::string const &) const;
 	private:

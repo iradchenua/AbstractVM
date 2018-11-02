@@ -5,6 +5,15 @@ Factory::Factory() {
 
 }
 
+Factory::Factory(Factory const & rhs) {
+	*this = rhs;
+}
+
+Factory const &Factory::operator=(Factory const & rhs) {
+	static_cast<void>(rhs);
+	return (*this);
+}
+
 Factory::~Factory() {
 
 }

@@ -3,7 +3,10 @@ NAME = avm
 
 SRCS =  src/AOperand.cpp \
 		src/Factory.cpp \
+		src/DivisionByZero.cpp \
 		main.cpp
+		#src/Caster.cpp \
+		
 
 INCLUDES = -I includes/ 
 
