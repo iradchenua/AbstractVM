@@ -4,6 +4,7 @@ NAME = avm
 SRCS =  src/AOperand.cpp \
 		src/Factory.cpp \
 		src/DivisionByZero.cpp \
+		src/Reader.cpp \
 		main.cpp
 		#src/Caster.cpp \
 		
