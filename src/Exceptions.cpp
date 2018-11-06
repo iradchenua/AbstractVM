@@ -1,5 +1,23 @@
 #include "Exceptions.hpp"
 
+Exceptions::DivisionByZero	& Exceptions::DivisionByZero::operator=(Exceptions::DivisionByZero const &e)
+{
+	std::exception::operator=(e);
+	return (*this);
+}
+
+Exceptions::DivisionByZero::DivisionByZero() {};
+Exceptions::DivisionByZero::~DivisionByZero() throw() {};
+Exceptions::DivisionByZero::DivisionByZero(Exceptions::DivisionByZero const & e) {
+	*this = e;
+}
+
+const char *Exceptions::DivisionByZero:: what(void) const throw() {
+	return ("division by zero");
+}
+
+
+
 Exceptions::ReaderExcept & Exceptions::ReaderExcept::operator=(Exceptions::ReaderExcept const &e)
 {
 	std::exception::operator=(e);

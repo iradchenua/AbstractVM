@@ -1,6 +1,6 @@
 #include "IOperand.hpp"
 #include "FactorySpace.hpp"
-#include "DivisionByZero.hpp"
+#include "Exceptions.hpp"
 #include <iostream>
 #include <limits>
 #include <typeinfo>
@@ -48,11 +48,17 @@ template<class T> class AOperand : public IOperand {
 			return (factorySpace::factory.createOperand(this->biggerType(rhs), resVal));
 		};
 
+		void limitError() {
+			if (this->_strVal[0] == '-')
+					throw std::out_of_range(std::string("underflow for type: ") + factorySpace::lowStrTypes[this->_type]);
+				else
+					throw std::out_of_range(std::string("overflow for type: ") + factorySpace::lowStrTypes[this->_type]);
+		}
+
 		template<typename U>
 		T checkLimit(U const & val) {
-			if (val >  std::numeric_limits<T>::max() || val < std::numeric_limits<T>::lowest()) {
-				throw std::out_of_range(std::string("out of range for type: ") + factorySpace::lowStrTypes[this->_type]);
-			}
+			if (val >  std::numeric_limits<T>::max() || val < std::numeric_limits<T>::lowest())
+				this->limitError();
 			return (val);
 		}
 
@@ -65,8 +71,9 @@ template<class T> class AOperand : public IOperand {
 				return (checkLimit(std::stod(strVal)));
 			}
 			catch(std::out_of_range const & e) {
-				throw std::out_of_range(std::string("out of range for type: ") + factorySpace::lowStrTypes[this->_type]);
+				this->limitError();
 			}
+			return (0);
 		};
 
 		AOperand() : _type(Int8), _precison(_type), _val(this->convertFun("0")), _strVal(std::to_string(this->_val)) {
@@ -119,7 +126,7 @@ template<class T> class AOperand : public IOperand {
 		IOperand const * operator%(IOperand const & rhs) const {
 			return (this->doOp(rhs, [](auto a, auto b) {
 					if (b == 0)
-						throw DivisionByZero();;
+						throw Exceptions::DivisionByZero();;
 					return (std::fmod(a, b));
 				}));
 		};
@@ -127,7 +134,7 @@ template<class T> class AOperand : public IOperand {
 		IOperand const * operator/(IOperand const & rhs) const {
 			return (this->doOp(rhs, [](auto a, auto b) {
 				if (b == 0)
-						throw DivisionByZero();;
+						throw Exceptions::DivisionByZero();;
 				return (a / b);
 			}));
 		};

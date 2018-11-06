@@ -3,7 +3,6 @@ NAME = avm
 
 SRCS =  src/Exceptions.cpp \
 		src/Factory.cpp \
-		src/DivisionByZero.cpp \
 		src/Reader.cpp \
 		main.cpp
 		
@@ -14,7 +13,7 @@ OBJ = $(SRCS:%.cpp=%.o)
 
 CC = clang++
 
-FLAGS = -Wall -Wextra $(INCLUDES)
+FLAGS = -Wall -Wextra -std=c++14 $(INCLUDES)
 
 %.o: %.cpp
 	$(CC) -c -o $@ $< $(FLAGS)

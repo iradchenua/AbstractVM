@@ -3,6 +3,17 @@
 #define EXCEPTIONS_HPP
 
 struct Exceptions {
+	class DivisionByZero: public std::exception {
+		public:
+			DivisionByZero(void);
+
+			DivisionByZero(DivisionByZero const & e);
+			~DivisionByZero(void) throw();
+
+			DivisionByZero & operator=(const DivisionByZero & e);
+
+			virtual const char *what() const throw();
+	};
 	class ReaderExcept: public std::exception {
 			public:
 				ReaderExcept(void);

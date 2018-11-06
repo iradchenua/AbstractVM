@@ -106,7 +106,7 @@ void Reader::getLRhs() {
 		this->_rhs = this->_deque->front();
 		this->_deque->pop_front();
 	}
-	catch (Exceptions::NotEnoughOperands const & e) {
+	catch (Exceptions::EmptyStack const & e) {
 		throw (Exceptions::NotEnoughOperands());
 	}
 	catch (std::exception const & e)
@@ -211,7 +211,7 @@ void Reader::read(const char *programName) {
 
 		this->_line.erase(0, this->_line.find_first_not_of("\t\v\r\f "));
 
-		if (!program)
+		if (!programName)
 			if (this->_line == ";;")
 				break;
 
