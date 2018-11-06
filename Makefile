@@ -6,7 +6,6 @@ SRCS =  src/AOperand.cpp \
 		src/DivisionByZero.cpp \
 		src/Reader.cpp \
 		main.cpp
-		#src/Caster.cpp \
 		
 
 INCLUDES = -I includes/ 

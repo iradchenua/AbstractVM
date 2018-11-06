@@ -1,14 +1,15 @@
 #include "Reader.hpp"
-#include <sstream> 
+#include "AOperand.hpp"
 
-Reader::Reader(std::deque<IOperand const *> * const deque) : _deque(deque) {
+Reader::Reader() : _deque(nullptr) {
 	this->_mute = false;
 	this->_line = "";
 	this->_lhs = nullptr;
 	this->_rhs = nullptr;
 }
 
-Reader::Reader() : _deque(nullptr) {
+Reader::Reader(std::deque<IOperand const *> * const deque) : _deque(deque) {
+	this->_exit = false;
 	this->_mute = false;
 	this->_line = "";
 	this->_lhs = nullptr;
@@ -32,39 +33,45 @@ Reader const & Reader::operator=(Reader const & rhs) {
 	return (*this);
 }
 
-void Reader::searchPosOfType(std::string const & init, std::size_t & pos, int & type) const {
-	type = Int8;
-	for ( ; type < COUNT; type++) {
-		pos = init.find(factorySpace::lowStrTypes[type]);
-		if (pos != std::string::npos)
-			break;
-	}
+void Reader::print() {
+ 	if (this->_deque->front()->getType() == Int8)
+ 		this->_messages << static_cast<char>(dynamic_cast<AOperand<int8_t> const *>(this->_deque->front())->getVal()) << std::endl;
+ 	else
+ 		throw Reader::BadAssert();
 }
 
-void Reader::getInitializationValue(std::string const & init) const {
-	std::size_t pos;
-	int type;
+void Reader::assert(std::string const & init) {
+	std::smatch pieces;
 
-	this->searchPosOfType(init, pos, type);
+ 	if (std::regex_match(init, pieces, Reader::_typePattern)) {
+ 		if (!this->_mute) {
+	 		this->checkEmpty();
+	 		if (this->_deque->front()->getType() == factorySpace::mapStringOperand.at(pieces[1])) {
+	 			IOperand const *assertOperand = factorySpace::factory.createOperand(factorySpace::mapStringOperand.at(pieces[1]), pieces[pieces.size() - 1]);
+	 			if (assertOperand->toString() != this->_deque->front()->toString()) {
+	 				delete assertOperand;
+	 				throw Reader::BadAssert(init);
+	 			}
+	 			delete assertOperand;
+	 		}
+ 		}
+ 	}
+ 	else
+ 		throw Reader::BadAssert(init);
+}
 
-	if (pos != 0)
-		throw Reader::InvalidCommand(init);
+void Reader::push(std::string const & init) {
+	std::smatch pieces;
 
-	std::size_t openBracePos = init.find("(");
-	std::size_t closeBracePos = init.find(")");
-
-	if (openBracePos != factorySpace::lowStrTypes[type].size())
-		throw Reader::InvalidCommand(init);
-	if (closeBracePos == openBracePos + 1)
-		std::cout << "empty value in braces error" << std::endl;
-	if (closeBracePos == std::string::npos)
-	 	std::cout << "missed close brace" << std::endl;
-	if (openBracePos == std::string::npos)
-		std::cout << "missed open brace" << std::endl;
-
-	this->_deque->push_front(\
-		factorySpace::factory.createOperand(static_cast<eOperandType>(type), init.substr(openBracePos + 1, closeBracePos - openBracePos - 1))
-	);
+ 	if (std::regex_match(init, pieces, Reader::_typePattern)) {
+ 		if (!this->_mute) {
+	 		this->_deque->push_front(\
+				factorySpace::factory.createOperand(factorySpace::mapStringOperand.at(pieces[1]), pieces[pieces.size() - 1])
+			);
+ 		}
+ 	}
+ 	else
+ 		throw Reader::InvalidCommand(init);
 }
 
 void Reader::checkEmpty() const {
@@ -129,6 +136,7 @@ void Reader::add() {
 }
 
 void Reader::pop() {
+	this->checkEmpty();
 	delete this->_deque->front();
 	this->_deque->pop_front();
 }
@@ -141,10 +149,14 @@ void Reader::parseLine()  {
 
     if (splited.size() >= 1) {
     	std::string const & command = splited[0];
-    	if (Reader::_mapNoArgumentFun.count(command))
-    		(this->*Reader::_mapNoArgumentFun[command])();
-    	else if (command == "push" && splited.size() >= 2)
-    		getInitializationValue(splited[1]);
+    	if (Reader::_mapNoArgumentFun.count(command)) {
+    		if (!this->_mute)
+    			(this->*Reader::_mapNoArgumentFun[command])();
+    	}
+    	else if (splited.size() >= 2) {
+	    	if (Reader::_mapArgumentFun.count(command))
+	    		(this->*Reader::_mapArgumentFun[command])(splited[1]);
+    	}
     	else
     		throw Reader::InvalidCommand(command);
 
@@ -157,41 +169,72 @@ void Reader::parseLine()  {
 
 }
 
-void Reader::read() {
+void Reader::error(std::exception const & err, size_t const & numberLine) {
+	this->clearLRhs();
+	this->_messages << "\033[1;32mLine: " << numberLine  << "\033[0m" \
+	<< ": \033[1;31mError\033[0m: " << "\033[1;96m" \
+	<< err.what() << "\033[0m" << std::endl;
+}
+
+void Reader::read(const char *programName) {
 	std::size_t numberLine = 0;
 
-	while (std::cin.good()) {
+	std::ifstream program(programName);
 
-		getline(std::cin, this->_line);
+	if (programName)
+		if (program.bad() || !program)
+			throw Reader::BadFile();
+
+	while (1) {
+		if (!program) {
+			if (!std::cin.good())
+				break ;
+			std::cout << "\033[1;32m" << numberLine << "\033[0m: ";
+			std::getline(std::cin, this->_line);
+		}
+		else
+		{
+			if (program.eof())
+				break ;
+			std::getline(program, this->_line);
+		}
+
 		this->_line.erase(0, this->_line.find_first_not_of("\t\v\r\f "));
 
-		if (this->_line == ";;")
-			break;
+		if (!program)
+			if (this->_line == ";;")
+				break;
 
-		if (!this->_mute && !this->_line.empty()) {
-			if (this->_line.at(0) == ';')
+		if (!this->_exit && !this->_line.empty()) {
+			if (this->_line.at(0) == ';') {
+				numberLine++;
 				continue ;
+			}
 			else if (this->_line == "exit")
-				this->_mute = true;
+				this->_exit = true;
 			else {
 				try {
 					this->parseLine();
 				}
 				catch (Reader::ReaderExcept const & e) {
-					this->clearLRhs();
-					this->_messages << "Line " << numberLine \
-					<< ": Error : " << e.what() << std::endl;
+					this->error(e, numberLine);
+					this->_mute = true;
+				}
+				catch (std::out_of_range const & e) {
+					this->error(e, numberLine);
+					this->_mute = true;
 				}
 				catch (std::exception const & e) {
-					this->clearLRhs();
-					this->_messages << "Line " << numberLine \
-					<< ": Error : " << e.what() << std::endl;
+					this->error(e, numberLine);
+					this->_mute = true;
 				}
 			}
 		}
 		numberLine++;
 	}
 	std::cout << this->_messages.str();
+	if (!this->_exit)
+		throw Reader::NoExit();
 }
 
 Reader::ReaderExcept & Reader::ReaderExcept::operator=(Reader::ReaderExcept const &e)
@@ -220,11 +263,11 @@ Reader::InvalidCommand	& Reader::InvalidCommand::operator=(Reader::InvalidComman
 	return (*this);
 }
 
-Reader::InvalidCommand::InvalidCommand(std::string const & invalidCommand) : _invalidCommand("Invalid command: " + invalidCommand) {
+Reader::InvalidCommand::InvalidCommand(std::string const & invalidCommand) : _invalidCommand("Invalid command\e[97m: " + invalidCommand) {
 
 };
 
-Reader::InvalidCommand::InvalidCommand() : _invalidCommand("InvalidCommand: ") {
+Reader::InvalidCommand::InvalidCommand() : _invalidCommand("InvalidCommand:\e[97m ") {
 
 };
 Reader::InvalidCommand::~InvalidCommand() throw() {};
@@ -257,7 +300,75 @@ const char *Reader::EmptyStack:: what(void) const throw() {
 	return ("empty stack");
 }
 
+Reader::NoExit::NoExit() {
+
+};
+Reader::NoExit::~NoExit() throw() {};
+
+Reader::NoExit::NoExit(Reader::NoExit const & e) {
+	*this = e;
+}
+
+const char *Reader::NoExit:: what(void) const throw() {
+	return ("\033[1;31mno exit\033[0m");
+}
+
+Reader::NoExit	& Reader::NoExit::operator=(Reader::NoExit const &e)
+{
+	std::exception::operator=(e);
+	return (*this);
+}
+
+Reader::BadFile::BadFile() {
+
+};
+
+Reader::BadFile::~BadFile() throw() {};
+
+Reader::BadFile::BadFile(Reader::BadFile const & e) {
+	*this = e;
+}
+
+const char *Reader::BadFile:: what(void) const throw() {
+	return ("\033[1;31mbad program name\033[0m");
+}
+
+Reader::BadFile	& Reader::BadFile::operator=(Reader::BadFile const &e)
+{
+	std::exception::operator=(e);
+	return (*this);
+}
+
+Reader::BadAssert::BadAssert(std::string const & badAssert) : _badAssert("Bad assert:\e[97m " + badAssert) {
+
+};
+
+Reader::BadAssert::BadAssert() : _badAssert("BadAssert\e[97m") {
+
+};
+Reader::BadAssert::~BadAssert() throw() {};
+
+Reader::BadAssert::BadAssert(Reader::BadAssert const & e) {
+	*this = e;
+}
+
+Reader::BadAssert	& Reader::BadAssert::operator=(Reader::BadAssert const &e)
+{
+	std::exception::operator=(e);
+	return (*this);
+}
+
+
+const char *Reader::BadAssert:: what(void) const throw() {
+	return (this->_badAssert.c_str());
+}
 std::map<std::string, Reader::noArgumentFun> Reader::_mapNoArgumentFun = \
 {{"pop", &Reader::pop}, {"dump", &Reader::dump}, {"add", &Reader::add}, \
   {"sub", &Reader::sub}, {"mul", &Reader::mul}, {"div", &Reader::div}, \
- {"mod", &Reader::mod}};
+ {"mod", &Reader::mod}, {"print", &Reader::print}};
+
+std::map<std::string, Reader::argumentFun> Reader::_mapArgumentFun = \
+{{"push", &Reader::push},{"assert", &Reader::assert}};
+
+std::regex const Reader::_typePattern("^(int(8|16|32)|double|float)\\(([-+]?[0-9]*\\.?[0-9]+)\\)$");
+

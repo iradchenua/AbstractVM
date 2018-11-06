@@ -50,12 +50,25 @@ class AOperand : public IOperand {
 			return (factorySpace::factory.createOperand(this->biggerType(rhs), resVal));
 		};
 
+		template<typename U>
+		T checkLimit(U const & val) {
+			if (val >  std::numeric_limits<T>::max() || val < std::numeric_limits<T>::lowest()) {
+				throw std::out_of_range(std::string("out of range for type: ") + factorySpace::lowStrTypes[this->_type]);
+			}
+			return (val);
+		}
+
 		T convertFun(std::string const strVal) {
-			if (this->_type < Int32)
-				return (std::stoi(strVal));
-			if (this->_type == Float)
-				return (std::stof(strVal));
-			return (std::stod(strVal));
+			try {				
+				if (this->_type < Int32)
+					return (checkLimit(std::stoi(strVal)));
+				if (this->_type == Float)
+					return (checkLimit(std::stof(strVal)));
+				return (checkLimit(std::stod(strVal)));
+			}
+			catch(std::out_of_range const & e) {
+				throw std::out_of_range(std::string("out of range for type: ") + factorySpace::lowStrTypes[this->_type]);
+			}
 		};
 
 		AOperand() : _type(Int8), _precison(_type), _val(this->convertFun("0")), _strVal(std::to_string(this->_val)) {
@@ -72,6 +85,10 @@ class AOperand : public IOperand {
 		};
 	public:
 
+		AOperand(T const & val, eOperandType type) :  \
+		_type(type), _precison(_type), _val(val), _strVal(std::to_string(this->_val)) {
+	
+		};
 
 		AOperand(std::string const strVal, eOperandType type) :  \
 		_type(type), _precison(_type), _val(this->convertFun(strVal)), _strVal(std::to_string(this->_val)) {
