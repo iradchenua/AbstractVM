@@ -9,9 +9,7 @@
 #ifndef AOPERAND_HPP
 #define AOPERAND_HPP
 
-template <typename T>
-
-class AOperand : public IOperand {
+template<class T> class AOperand : public IOperand {
 
 	private:
 		eOperandType const _type;
@@ -83,6 +81,18 @@ class AOperand : public IOperand {
 		AOperand(AOperand<T> const &  rhs) {
 			*this = rhs;
 		};
+
+		std::string ownToString(T const & val) {
+			if (this->_type <= Int32)
+				return (std::to_string(val));
+			std::string res = std::to_string(val);
+			while (res.at(res.size() - 1) == '0') {
+				res.pop_back();
+			}
+			if (res.at(res.size() - 1) == '.')
+				res.push_back('0');
+			return (res);
+		}
 	public:
 
 		AOperand(T const & val, eOperandType type) :  \
@@ -91,7 +101,7 @@ class AOperand : public IOperand {
 		};
 
 		AOperand(std::string const strVal, eOperandType type) :  \
-		_type(type), _precison(_type), _val(this->convertFun(strVal)), _strVal(std::to_string(this->_val)) {
+		_type(type), _precison(_type), _val(this->convertFun(strVal)), _strVal(this->ownToString(this->_val)) {
 	
 		};
 

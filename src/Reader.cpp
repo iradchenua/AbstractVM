@@ -1,5 +1,6 @@
 #include "Reader.hpp"
 #include "AOperand.hpp"
+#include "Exceptions.hpp"
 
 Reader::Reader() : _deque(nullptr) {
 	this->_mute = false;
@@ -37,7 +38,7 @@ void Reader::print() {
  	if (this->_deque->front()->getType() == Int8)
  		this->_messages << static_cast<char>(dynamic_cast<AOperand<int8_t> const *>(this->_deque->front())->getVal()) << std::endl;
  	else
- 		throw Reader::BadAssert();
+ 		throw Exceptions::BadAssert();
 }
 
 void Reader::assert(std::string const & init) {
@@ -50,14 +51,14 @@ void Reader::assert(std::string const & init) {
 	 			IOperand const *assertOperand = factorySpace::factory.createOperand(factorySpace::mapStringOperand.at(pieces[1]), pieces[pieces.size() - 1]);
 	 			if (assertOperand->toString() != this->_deque->front()->toString()) {
 	 				delete assertOperand;
-	 				throw Reader::BadAssert(init);
+	 				throw Exceptions::BadAssert(init);
 	 			}
 	 			delete assertOperand;
 	 		}
  		}
  	}
  	else
- 		throw Reader::BadAssert(init);
+ 		throw Exceptions::BadAssert(init);
 }
 
 void Reader::push(std::string const & init) {
@@ -71,12 +72,12 @@ void Reader::push(std::string const & init) {
  		}
  	}
  	else
- 		throw Reader::InvalidCommand(init);
+ 		throw Exceptions::InvalidCommand(init);
 }
 
 void Reader::checkEmpty() const {
 	if (this->_deque->empty())
-		throw EmptyStack();
+		throw Exceptions::EmptyStack();
 }
 
 void Reader::dump() {
@@ -97,12 +98,21 @@ void Reader::clearLRhs() {
 }
 
 void Reader::getLRhs() {
-	this->checkEmpty();
-	this->_lhs = this->_deque->front();
-	this->_deque->pop_front();
-	this->checkEmpty();
-	this->_rhs = this->_deque->front();
-	this->_deque->pop_front();
+	try {
+		this->checkEmpty();
+		this->_lhs = this->_deque->front();
+		this->_deque->pop_front();
+		this->checkEmpty();
+		this->_rhs = this->_deque->front();
+		this->_deque->pop_front();
+	}
+	catch (Exceptions::NotEnoughOperands const & e) {
+		throw (Exceptions::NotEnoughOperands());
+	}
+	catch (std::exception const & e)
+	{
+		throw (std::exception());
+	}
 }
 
 void Reader::mod() {
@@ -158,7 +168,7 @@ void Reader::parseLine()  {
 	    		(this->*Reader::_mapArgumentFun[command])(splited[1]);
     	}
     	else
-    		throw Reader::InvalidCommand(command);
+    		throw Exceptions::InvalidCommand(command);
 
 		for(std::vector<std::string>::iterator it = splited.begin() + 1; it != splited.end(); it++) {
 		    if (!(*it).empty())
@@ -183,10 +193,10 @@ void Reader::read(const char *programName) {
 
 	if (programName)
 		if (program.bad() || !program)
-			throw Reader::BadFile();
+			throw Exceptions::BadFile();
 
 	while (1) {
-		if (!program) {
+		if (!programName) {
 			if (!std::cin.good())
 				break ;
 			std::cout << "\033[1;32m" << numberLine << "\033[0m: ";
@@ -216,7 +226,7 @@ void Reader::read(const char *programName) {
 				try {
 					this->parseLine();
 				}
-				catch (Reader::ReaderExcept const & e) {
+				catch (Exceptions::ReaderExcept const & e) {
 					this->error(e, numberLine);
 					this->_mute = true;
 				}
@@ -234,134 +244,9 @@ void Reader::read(const char *programName) {
 	}
 	std::cout << this->_messages.str();
 	if (!this->_exit)
-		throw Reader::NoExit();
+		throw Exceptions::NoExit();
 }
 
-Reader::ReaderExcept & Reader::ReaderExcept::operator=(Reader::ReaderExcept const &e)
-{
-	std::exception::operator=(e);
-	return (*this);
-}
-
-Reader::ReaderExcept::ReaderExcept() {
-
-};
-Reader::ReaderExcept::~ReaderExcept() throw() {};
-
-Reader::ReaderExcept::ReaderExcept(Reader::ReaderExcept const & e) {
-	*this = e;
-}
-
-const char *Reader::ReaderExcept:: what(void) const throw() {
-	return ("");
-}
-
-
-Reader::InvalidCommand	& Reader::InvalidCommand::operator=(Reader::InvalidCommand const &e)
-{
-	std::exception::operator=(e);
-	return (*this);
-}
-
-Reader::InvalidCommand::InvalidCommand(std::string const & invalidCommand) : _invalidCommand("Invalid command\e[97m: " + invalidCommand) {
-
-};
-
-Reader::InvalidCommand::InvalidCommand() : _invalidCommand("InvalidCommand:\e[97m ") {
-
-};
-Reader::InvalidCommand::~InvalidCommand() throw() {};
-
-Reader::InvalidCommand::InvalidCommand(Reader::InvalidCommand const & e) {
-	*this = e;
-}
-
-const char *Reader::InvalidCommand:: what(void) const throw() {
-	return (this->_invalidCommand.c_str());
-}
-
-
-Reader::EmptyStack	& Reader::EmptyStack::operator=(Reader::EmptyStack const &e)
-{
-	std::exception::operator=(e);
-	return (*this);
-}
-
-Reader::EmptyStack::EmptyStack() {
-
-};
-Reader::EmptyStack::~EmptyStack() throw() {};
-
-Reader::EmptyStack::EmptyStack(Reader::EmptyStack const & e) {
-	*this = e;
-}
-
-const char *Reader::EmptyStack:: what(void) const throw() {
-	return ("empty stack");
-}
-
-Reader::NoExit::NoExit() {
-
-};
-Reader::NoExit::~NoExit() throw() {};
-
-Reader::NoExit::NoExit(Reader::NoExit const & e) {
-	*this = e;
-}
-
-const char *Reader::NoExit:: what(void) const throw() {
-	return ("\033[1;31mno exit\033[0m");
-}
-
-Reader::NoExit	& Reader::NoExit::operator=(Reader::NoExit const &e)
-{
-	std::exception::operator=(e);
-	return (*this);
-}
-
-Reader::BadFile::BadFile() {
-
-};
-
-Reader::BadFile::~BadFile() throw() {};
-
-Reader::BadFile::BadFile(Reader::BadFile const & e) {
-	*this = e;
-}
-
-const char *Reader::BadFile:: what(void) const throw() {
-	return ("\033[1;31mbad program name\033[0m");
-}
-
-Reader::BadFile	& Reader::BadFile::operator=(Reader::BadFile const &e)
-{
-	std::exception::operator=(e);
-	return (*this);
-}
-
-Reader::BadAssert::BadAssert(std::string const & badAssert) : _badAssert("Bad assert:\e[97m " + badAssert) {
-
-};
-
-Reader::BadAssert::BadAssert() : _badAssert("BadAssert\e[97m") {
-
-};
-Reader::BadAssert::~BadAssert() throw() {};
-
-Reader::BadAssert::BadAssert(Reader::BadAssert const & e) {
-	*this = e;
-}
-
-Reader::BadAssert	& Reader::BadAssert::operator=(Reader::BadAssert const &e)
-{
-	std::exception::operator=(e);
-	return (*this);
-}
-
-
-const char *Reader::BadAssert:: what(void) const throw() {
-	return (this->_badAssert.c_str());
-}
 std::map<std::string, Reader::noArgumentFun> Reader::_mapNoArgumentFun = \
 {{"pop", &Reader::pop}, {"dump", &Reader::dump}, {"add", &Reader::add}, \
   {"sub", &Reader::sub}, {"mul", &Reader::mul}, {"div", &Reader::div}, \

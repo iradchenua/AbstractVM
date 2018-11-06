@@ -1,5 +1,6 @@
 #include <iostream>
 #include "Reader.hpp"
+#include "Exceptions.hpp"
 
 int main(int ac, char **av) {
 
@@ -13,12 +14,13 @@ int main(int ac, char **av) {
 		else
 			reader.read();
 	} 
-	catch (Reader::NoExit const & e) {
+	catch (Exceptions::NoExit const & e) {
 		std::cout << e.what() << std::endl;
 	}
 	catch (std::exception const & e)
 	{
 		std::cout << e.what() << std::endl;
 	}
+	delete deque;
 	return (0);
 }

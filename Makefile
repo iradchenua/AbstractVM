@@ -1,7 +1,7 @@
 
 NAME = avm
 
-SRCS =  src/AOperand.cpp \
+SRCS =  src/Exceptions.cpp \
 		src/Factory.cpp \
 		src/DivisionByZero.cpp \
 		src/Reader.cpp \

@@ -1,8 +1,0 @@
-push int8(12)
-dump
-push float(13)
-div
-dump
-push int8(70)
-print
-exit
