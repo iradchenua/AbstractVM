@@ -1,5 +1,31 @@
 #include "Exceptions.hpp"
 
+Exceptions::Out	& Exceptions::Out::operator=(Exceptions::Out const &e)
+{
+	std::exception::operator=(e);
+	return (*this);
+}
+
+Exceptions::Out::Out() : std::overflow_error("overflow") {
+
+};
+
+Exceptions::Out::Out(std::string const & what_arg) : std::overflow_error(what_arg) {
+
+};
+
+Exceptions::Out::~Out() throw() {
+
+};
+Exceptions::Out::Out(Exceptions::Out const & e) : std::overflow_error("overflow") {
+	*this = e;
+}
+
+const char *Exceptions::Out:: what(void) const throw() {
+	return (this->std::overflow_error::what());
+}
+
+
 Exceptions::DivisionByZero	& Exceptions::DivisionByZero::operator=(Exceptions::DivisionByZero const &e)
 {
 	std::exception::operator=(e);

@@ -19,6 +19,8 @@ class IOperand  {
 		virtual IOperand const * operator*(IOperand const & rhs) const = 0;
 		virtual IOperand const * operator+(IOperand const & rhs) const = 0;
 		virtual IOperand const * operator-(IOperand const & rhs) const = 0;
+		virtual IOperand const * max(IOperand const & rhs) const = 0;
+		virtual IOperand const * min(IOperand const & rhs) const = 0;
 
 		virtual ~IOperand( void ) {};
 		virtual std::string const & toString( void ) const = 0;

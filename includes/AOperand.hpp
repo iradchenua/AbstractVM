@@ -48,30 +48,30 @@ template<class T> class AOperand : public IOperand {
 			return (factorySpace::factory.createOperand(this->biggerType(rhs), resVal));
 		};
 
-		void limitError() {
-			if (this->_strVal[0] == '-')
-					throw std::out_of_range(std::string("underflow for type: ") + factorySpace::lowStrTypes[this->_type]);
+		void limitError(std::string const & strVal) {
+			if (strVal[0] == '-')
+					throw Exceptions::Out(std::string("underflow for type: ") + factorySpace::lowStrTypes[this->_type]);
 				else
-					throw std::out_of_range(std::string("overflow for type: ") + factorySpace::lowStrTypes[this->_type]);
+					throw Exceptions::Out(std::string("overflow for type: ") + factorySpace::lowStrTypes[this->_type]);
 		}
 
 		template<typename U>
-		T checkLimit(U const & val) {
+		T checkLimit(U const & val, std::string const & strVal) {
 			if (val >  std::numeric_limits<T>::max() || val < std::numeric_limits<T>::lowest())
-				this->limitError();
+				this->limitError(strVal);
 			return (val);
 		}
 
 		T convertFun(std::string const strVal) {
 			try {				
 				if (this->_type < Int32)
-					return (checkLimit(std::stoi(strVal)));
+					return (checkLimit(std::stoi(strVal), strVal));
 				if (this->_type == Float)
-					return (checkLimit(std::stof(strVal)));
-				return (checkLimit(std::stod(strVal)));
+					return (checkLimit(std::stof(strVal), strVal));
+				return (checkLimit(std::stod(strVal), strVal));
 			}
 			catch(std::out_of_range const & e) {
-				this->limitError();
+				this->limitError(strVal);
 			}
 			return (0);
 		};
@@ -139,6 +139,17 @@ template<class T> class AOperand : public IOperand {
 			}));
 		};
 
+		IOperand const * max(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+				return (a > b ? a : b);
+			}));
+		};
+
+		IOperand const * min(IOperand const & rhs) const {
+			return (this->doOp(rhs, [](auto a, auto b) {
+				return (a < b ? a : b);
+			}));
+		};
 
 		IOperand const * operator*(IOperand const & rhs) const {
 			return (this->doOp(rhs, [](auto a, auto b) {

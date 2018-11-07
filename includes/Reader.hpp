@@ -45,6 +45,8 @@ class Reader {
 		void mul();
 		void div();
 		void mod();
+		void max();
+		void min();
 		void print();
 
 		void exit();

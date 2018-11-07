@@ -3,6 +3,20 @@
 #define EXCEPTIONS_HPP
 
 struct Exceptions {
+
+	class Out: public std::overflow_error {
+		public:
+			Out(void);
+			Out(std::string const & what_arg);
+
+			Out(Out const & e);
+			~Out(void) throw();
+
+			Out & operator=(const Out & e);
+
+			virtual const char *what() const throw();
+	};
+
 	class DivisionByZero: public std::exception {
 		public:
 			DivisionByZero(void);

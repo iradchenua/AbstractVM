@@ -2,12 +2,8 @@
 #include "AOperand.hpp"
 #include "Exceptions.hpp"
 
-Reader::Reader() : _deque(nullptr) {
-	this->_numberLine = 0;
-	this->_mute = false;
-	this->_line = "";
-	this->_lhs = nullptr;
-	this->_rhs = nullptr;
+Reader::Reader() : Reader::Reader(nullptr) {
+
 }
 
 Reader::Reader(std::deque<IOperand const *> * const deque) : _deque(deque) {
@@ -70,15 +66,16 @@ void Reader::exit() {
 void Reader::push(std::string const & init) {
 	std::smatch pieces;
 
- 	if (std::regex_match(init, pieces, Reader::_typePattern)) {
+ 	if (std::regex_match(init, pieces, Reader::_typePattern)) {	
  		if (!this->_mute) {
+
 	 		this->_deque->push_front(\
 				factorySpace::factory.createOperand(factorySpace::mapStringOperand.at(pieces[1]), pieces[pieces.size() - 1])
 			);
  		}
  	}
  	else
- 		throw Exceptions::InvalidCommand(init);
+ 		throw Exceptions::InvalidCommand(this->_line);
 }
 
 void Reader::checkEmpty() const {
@@ -127,6 +124,18 @@ void Reader::mod() {
 	this->clearLRhs();
 }
 
+void Reader::max() {
+	this->getLRhs();
+	this->_deque->push_back(this->_rhs->max(*this->_lhs));
+	this->clearLRhs();
+}
+
+void Reader::min() {
+	this->getLRhs();
+	this->_deque->push_back(this->_rhs->min(*this->_lhs));
+	this->clearLRhs();
+}
+
 void Reader::div() {
 	this->getLRhs();
 	this->_deque->push_back(*this->_rhs / *this->_lhs);
@@ -163,13 +172,17 @@ void Reader::parseLine()  {
 
     Reader::noArgumentFun noArg = nullptr;
     Reader::argumentFun withArg = nullptr;
+    bool wasExit = false;
 
     std::vector<std::string> splited(beg, end);
     std::vector<std::string>::iterator arg = splited.end();
 
     for (auto it = splited.begin(); it < splited.end(); it++) {
-    	if (Reader::_mapNoArgumentFun.count(*it) && !noArg && !withArg)
+    	if (Reader::_mapNoArgumentFun.count(*it) && !noArg && !withArg) {
     		noArg = Reader::_mapNoArgumentFun[*it];
+    		if (*it == "exit")
+    			wasExit = true;
+    	}
     	else if (Reader::_mapArgumentFun.count(*it) && !withArg && !noArg)
     	{
     		withArg = Reader::_mapArgumentFun[*it];
@@ -178,16 +191,16 @@ void Reader::parseLine()  {
     			throw Exceptions::InvalidCommand(this->_line);
     		it++;
     	}
-    	else if ((*it).at(0) == ';')
+    	else if (it->at(0) == ';')
     		break ;
     	else
     		throw Exceptions::InvalidCommand(this->_line);
     }
-    if (noArg)
+    
+    if (noArg && (!this->_mute || wasExit))
     	(this->*noArg)();
-    else if (withArg) {
+    else if (withArg)
     	(this->*withArg)(*arg);
-    }
 }
 
 void Reader::error(std::exception const & err) {
@@ -227,17 +240,13 @@ void Reader::read(const char *programName) {
 				break;
 
 		if (!this->_exit && !this->_line.empty()) {
-			if (this->_line.at(0) == ';') {
-				this->_numberLine++;
-				continue ;
-			}
 			try {
 				this->parseLine();
 			}
 			catch (Exceptions::ReaderExcept const & e) {
 				this->error(e);
 			}
-			catch (std::out_of_range const & e) {
+			catch (Exceptions::Out const & e) {
 				this->error(e);
 			}
 			catch (std::exception const & e) {
@@ -255,7 +264,8 @@ void Reader::read(const char *programName) {
 std::map<std::string, Reader::noArgumentFun> Reader::_mapNoArgumentFun = \
 {{"pop", &Reader::pop}, {"dump", &Reader::dump}, {"add", &Reader::add}, \
   {"sub", &Reader::sub}, {"mul", &Reader::mul}, {"div", &Reader::div}, \
- {"mod", &Reader::mod}, {"print", &Reader::print}, {"exit", &Reader::exit}};
+ {"mod", &Reader::mod}, {"print", &Reader::print}, {"exit", &Reader::exit}, \
+{"max", &Reader::max}, {"min", &Reader::min}};
 
 std::map<std::string, Reader::argumentFun> Reader::_mapArgumentFun = \
 {{"push", &Reader::push},{"assert", &Reader::assert}};
