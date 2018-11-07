@@ -21,6 +21,7 @@ class Reader {
 		std::string _line;
 		bool 		_mute;
 		bool 		_exit;
+		std::size_t _numberLine;
 
 		std::deque<IOperand const *> * const _deque;
 	
@@ -46,6 +47,7 @@ class Reader {
 		void mod();
 		void print();
 
+		void exit();
 		void dump();
 		void pop();
 
@@ -54,7 +56,7 @@ class Reader {
 		void getLRhs();
 		void clearLRhs();
 
-		void error(std::exception const & e, std::size_t const & numberLine);
+		void error(std::exception const & e);
 
 	public:
 		Reader(std::deque<IOperand const *> * const deque);

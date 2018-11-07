@@ -3,6 +3,7 @@
 #include "Exceptions.hpp"
 
 Reader::Reader() : _deque(nullptr) {
+	this->_numberLine = 0;
 	this->_mute = false;
 	this->_line = "";
 	this->_lhs = nullptr;
@@ -10,6 +11,7 @@ Reader::Reader() : _deque(nullptr) {
 }
 
 Reader::Reader(std::deque<IOperand const *> * const deque) : _deque(deque) {
+	this->_numberLine = 0;
 	this->_exit = false;
 	this->_mute = false;
 	this->_line = "";
@@ -59,6 +61,10 @@ void Reader::assert(std::string const & init) {
  	}
  	else
  		throw Exceptions::BadAssert(init);
+}
+
+void Reader::exit() {
+	this->_exit = true;
 }
 
 void Reader::push(std::string const & init) {
@@ -155,40 +161,44 @@ void Reader::parseLine()  {
     std::istringstream buf(this->_line);
     std::istream_iterator<std::string> beg(buf), end;
 
+    Reader::noArgumentFun noArg = nullptr;
+    Reader::argumentFun withArg = nullptr;
+
     std::vector<std::string> splited(beg, end);
+    std::vector<std::string>::iterator arg = splited.end();
 
-    if (splited.size() >= 1) {
-    	std::string const & command = splited[0];
-    	if (Reader::_mapNoArgumentFun.count(command)) {
-    		if (!this->_mute)
-    			(this->*Reader::_mapNoArgumentFun[command])();
+    for (auto it = splited.begin(); it < splited.end(); it++) {
+    	if (Reader::_mapNoArgumentFun.count(*it) && !noArg && !withArg)
+    		noArg = Reader::_mapNoArgumentFun[*it];
+    	else if (Reader::_mapArgumentFun.count(*it) && !withArg && !noArg)
+    	{
+    		withArg = Reader::_mapArgumentFun[*it];
+    		arg = it + 1;
+    		if (arg == splited.end())
+    			throw Exceptions::InvalidCommand(this->_line);
+    		it++;
     	}
-    	else if (splited.size() >= 2) {
-	    	if (Reader::_mapArgumentFun.count(command))
-	    		(this->*Reader::_mapArgumentFun[command])(splited[1]);
-    	}
+    	else if ((*it).at(0) == ';')
+    		break ;
     	else
-    		throw Exceptions::InvalidCommand(command);
-
-		for(std::vector<std::string>::iterator it = splited.begin() + 1; it != splited.end(); it++) {
-		    if (!(*it).empty())
-				if ((*it).at(0) == ';')
-					break;
-		}
+    		throw Exceptions::InvalidCommand(this->_line);
     }
-
+    if (noArg)
+    	(this->*noArg)();
+    else if (withArg) {
+    	(this->*withArg)(*arg);
+    }
 }
 
-void Reader::error(std::exception const & err, size_t const & numberLine) {
+void Reader::error(std::exception const & err) {
+	this->_mute = true;
 	this->clearLRhs();
-	this->_messages << "\033[1;32mLine: " << numberLine  << "\033[0m" \
+	this->_messages << "\033[1;32mLine: " << this->_numberLine  << "\033[0m" \
 	<< ": \033[1;31mError\033[0m: " << "\033[1;96m" \
 	<< err.what() << "\033[0m" << std::endl;
 }
 
 void Reader::read(const char *programName) {
-	std::size_t numberLine = 0;
-
 	std::ifstream program(programName);
 
 	if (programName)
@@ -199,7 +209,7 @@ void Reader::read(const char *programName) {
 		if (!programName) {
 			if (!std::cin.good())
 				break ;
-			std::cout << "\033[1;32m" << numberLine << "\033[0m: ";
+			std::cout << "\033[1;32m" << this->_numberLine << "\033[0m: ";
 			std::getline(std::cin, this->_line);
 		}
 		else
@@ -210,6 +220,7 @@ void Reader::read(const char *programName) {
 		}
 
 		this->_line.erase(0, this->_line.find_first_not_of("\t\v\r\f "));
+		this->_line.erase(this->_line.find_last_not_of("\t\v\r\f ")+1);
 
 		if (!programName)
 			if (this->_line == ";;")
@@ -217,30 +228,24 @@ void Reader::read(const char *programName) {
 
 		if (!this->_exit && !this->_line.empty()) {
 			if (this->_line.at(0) == ';') {
-				numberLine++;
+				this->_numberLine++;
 				continue ;
 			}
-			else if (this->_line == "exit")
-				this->_exit = true;
-			else {
-				try {
-					this->parseLine();
-				}
-				catch (Exceptions::ReaderExcept const & e) {
-					this->error(e, numberLine);
-					this->_mute = true;
-				}
-				catch (std::out_of_range const & e) {
-					this->error(e, numberLine);
-					this->_mute = true;
-				}
-				catch (std::exception const & e) {
-					this->error(e, numberLine);
-					this->_mute = true;
-				}
+			try {
+				this->parseLine();
 			}
+			catch (Exceptions::ReaderExcept const & e) {
+				this->error(e);
+			}
+			catch (std::out_of_range const & e) {
+				this->error(e);
+			}
+			catch (std::exception const & e) {
+				this->error(e);
+			}
+		
 		}
-		numberLine++;
+		this->_numberLine++;
 	}
 	std::cout << this->_messages.str();
 	if (!this->_exit)
@@ -250,7 +255,7 @@ void Reader::read(const char *programName) {
 std::map<std::string, Reader::noArgumentFun> Reader::_mapNoArgumentFun = \
 {{"pop", &Reader::pop}, {"dump", &Reader::dump}, {"add", &Reader::add}, \
   {"sub", &Reader::sub}, {"mul", &Reader::mul}, {"div", &Reader::div}, \
- {"mod", &Reader::mod}, {"print", &Reader::print}};
+ {"mod", &Reader::mod}, {"print", &Reader::print}, {"exit", &Reader::exit}};
 
 std::map<std::string, Reader::argumentFun> Reader::_mapArgumentFun = \
 {{"push", &Reader::push},{"assert", &Reader::assert}};
