@@ -84,8 +84,6 @@ void Reader::checkEmpty() const {
 }
 
 void Reader::dump() {
-	std::string wtf;
-
 	for (auto operand : *(this->_deque)) {
 		this->_messages << operand->toString() << std::endl;
 	}
@@ -119,45 +117,31 @@ void Reader::getLRhs() {
 }
 
 void Reader::mod() {
-	this->getLRhs();
 	this->_deque->push_back(*this->_rhs % *this->_lhs);
-	this->clearLRhs();
 }
 
 void Reader::max() {
-	this->getLRhs();
 	this->_deque->push_back(this->_rhs->max(*this->_lhs));
-	this->clearLRhs();
 }
 
 void Reader::min() {
-	this->getLRhs();
 	this->_deque->push_back(this->_rhs->min(*this->_lhs));
-	this->clearLRhs();
 }
 
 void Reader::div() {
-	this->getLRhs();
 	this->_deque->push_back(*this->_rhs / *this->_lhs);
-	this->clearLRhs();
 }
 
 void Reader::mul() {
-	this->getLRhs();
 	this->_deque->push_back(*this->_rhs * *this->_lhs);
-	this->clearLRhs();
 }
 
 void Reader::sub() {
-	this->getLRhs();
 	this->_deque->push_back(*this->_rhs - *this->_lhs);
-	this->clearLRhs();
 }
 
 void Reader::add() {
-	this->getLRhs();
 	this->_deque->push_back(*this->_lhs + *this->_rhs);
-	this->clearLRhs();
 }
 
 void Reader::pop() {
@@ -171,6 +155,7 @@ void Reader::parseLine()  {
     std::istream_iterator<std::string> beg(buf), end;
 
     Reader::noArgumentFun noArg = nullptr;
+    Reader::noArgumentFun operFun = nullptr;
     Reader::argumentFun withArg = nullptr;
     bool wasExit = false;
 
@@ -178,12 +163,15 @@ void Reader::parseLine()  {
     std::vector<std::string>::iterator arg = splited.end();
 
     for (auto it = splited.begin(); it < splited.end(); it++) {
-    	if (Reader::_mapNoArgumentFun.count(*it) && !noArg && !withArg) {
+    	if (Reader::_mapOperators.count(*it) && !noArg && !withArg && !operFun) {
+    		operFun = Reader::_mapOperators[*it];
+    	}
+    	else if (Reader::_mapNoArgumentFun.count(*it) && !noArg && !withArg && !operFun) {
     		noArg = Reader::_mapNoArgumentFun[*it];
     		if (*it == "exit")
     			wasExit = true;
     	}
-    	else if (Reader::_mapArgumentFun.count(*it) && !withArg && !noArg)
+    	else if (Reader::_mapArgumentFun.count(*it) && !withArg && !noArg && !operFun)
     	{
     		withArg = Reader::_mapArgumentFun[*it];
     		arg = it + 1;
@@ -197,7 +185,12 @@ void Reader::parseLine()  {
     		throw Exceptions::InvalidCommand(this->_line);
     }
     
-    if (noArg && (!this->_mute || wasExit))
+    if (operFun &&  (!this->_mute || wasExit)) {
+    	this->getLRhs();
+    	(this->*operFun)();
+    	this->clearLRhs();
+    }
+    else if (noArg && (!this->_mute || wasExit))
     	(this->*noArg)();
     else if (withArg)
     	(this->*withArg)(*arg);
@@ -261,11 +254,14 @@ void Reader::read(const char *programName) {
 		throw Exceptions::NoExit();
 }
 
+std::map<std::string, Reader::noArgumentFun> Reader::_mapOperators = \
+{{"add", &Reader::add}, {"sub", &Reader::sub}, {"mul", &Reader::mul}, {"div", &Reader::div}, \
+ {"mod", &Reader::mod}, {"max", &Reader::max}, {"min", &Reader::min}};
+
+
 std::map<std::string, Reader::noArgumentFun> Reader::_mapNoArgumentFun = \
-{{"pop", &Reader::pop}, {"dump", &Reader::dump}, {"add", &Reader::add}, \
-  {"sub", &Reader::sub}, {"mul", &Reader::mul}, {"div", &Reader::div}, \
- {"mod", &Reader::mod}, {"print", &Reader::print}, {"exit", &Reader::exit}, \
-{"max", &Reader::max}, {"min", &Reader::min}};
+{{"pop", &Reader::pop}, {"dump", &Reader::dump}, \
+{"print", &Reader::print}, {"exit", &Reader::exit}};
 
 std::map<std::string, Reader::argumentFun> Reader::_mapArgumentFun = \
 {{"push", &Reader::push},{"assert", &Reader::assert}};

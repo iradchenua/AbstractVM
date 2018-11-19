@@ -28,6 +28,7 @@ class Reader {
 		IOperand const *_lhs;
 		IOperand const *_rhs;
 
+		static std::map<std::string, noArgumentFun> _mapOperators;
 		static std::map<std::string, noArgumentFun> _mapNoArgumentFun;
 		static std::map<std::string, argumentFun> _mapArgumentFun;
 		static std::regex const _typePattern;
